@@ -78,18 +78,24 @@ func NewAgent(sources *sources.LogSources, services *service.Services, processin
 	lnchrs.AddLauncher(listener.NewLauncher(coreConfig.Datadog.GetInt("logs_config.frame_size")))
 	lnchrs.AddLauncher(journald.NewLauncher())
 	lnchrs.AddLauncher(windowsevent.NewLauncher())
-	lnchrs.AddLauncher(docker.NewLauncher(
-		time.Duration(coreConfig.Datadog.GetInt("logs_config.docker_client_read_timeout"))*time.Second,
-		sources,
-		services,
-		cop,
-		coreConfig.Datadog.GetBool("logs_config.docker_container_use_file"),
-		coreConfig.Datadog.GetBool("logs_config.docker_container_force_use_file")))
-	lnchrs.AddLauncher(kubernetes.NewLauncher(
-		sources,
-		services,
-		cop,
-		coreConfig.Datadog.GetBool("logs_config.container_collect_all")))
+	if !util.CcaInAD() {
+		lnchrs.AddLauncher(docker.NewLauncher(
+			time.Duration(coreConfig.Datadog.GetInt("logs_config.docker_client_read_timeout"))*time.Second,
+			sources,
+			services,
+			cop,
+			coreConfig.Datadog.GetBool("logs_config.docker_container_use_file"),
+			coreConfig.Datadog.GetBool("logs_config.docker_container_force_use_file")))
+		lnchrs.AddLauncher(kubernetes.NewLauncher(
+			sources,
+			services,
+			cop,
+			coreConfig.Datadog.GetBool("logs_config.container_collect_all")))
+		/*
+			} else {
+				lnchrs.AddLauncher(container.NewLauncher())
+		*/
+	}
 
 	return &Agent{
 		sources:                   sources,
