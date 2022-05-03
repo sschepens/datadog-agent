@@ -16,6 +16,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/logs/diagnostic"
 	"github.com/DataDog/datadog-agent/pkg/logs/internal/launchers"
 	"github.com/DataDog/datadog-agent/pkg/logs/internal/launchers/channel"
+	"github.com/DataDog/datadog-agent/pkg/logs/internal/launchers/container"
 	"github.com/DataDog/datadog-agent/pkg/logs/internal/launchers/docker"
 	filelauncher "github.com/DataDog/datadog-agent/pkg/logs/internal/launchers/file"
 	"github.com/DataDog/datadog-agent/pkg/logs/internal/launchers/journald"
@@ -91,10 +92,8 @@ func NewAgent(sources *sources.LogSources, services *service.Services, processin
 			services,
 			cop,
 			coreConfig.Datadog.GetBool("logs_config.container_collect_all")))
-		/*
-			} else {
-				lnchrs.AddLauncher(container.NewLauncher())
-		*/
+	} else {
+		lnchrs.AddLauncher(container.NewLauncher())
 	}
 
 	return &Agent{
