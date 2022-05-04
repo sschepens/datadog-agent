@@ -96,7 +96,7 @@ func startCompliance(stopper startstop.Stopper, apiCl *apiserver.APIClient, isLe
 	checkMaxEvents := coreconfig.Datadog.GetInt("compliance_config.check_max_events_per_run")
 	configDir := coreconfig.Datadog.GetString("compliance_config.dir")
 
-	hostnameDetected, err := hostname.Get(context.TODO())
+	hname, err := hostname.Get(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func startCompliance(stopper startstop.Stopper, apiCl *apiserver.APIClient, isLe
 		endpoints,
 		checks.WithInterval(checkInterval),
 		checks.WithMaxEvents(checkMaxEvents),
-		checks.WithHostname(hostnameDetected),
+		checks.WithHostname(hname),
 		checks.WithMatchRule(func(rule *compliance.RuleCommon) bool {
 			return rule.Scope.Includes(compliance.KubernetesClusterScope)
 		}),

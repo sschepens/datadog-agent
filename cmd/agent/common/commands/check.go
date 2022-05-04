@@ -137,7 +137,7 @@ func Check(loggerName config.LoggerName, confFilePath *string, flagNoColor *bool
 				return nil
 			}
 
-			hostnameDetected, err := hostname.Get(context.TODO())
+			hname, err := hostname.Get(context.TODO())
 			if err != nil {
 				fmt.Printf("Cannot get hostname, exiting: %v\n", err)
 				return err
@@ -149,7 +149,7 @@ func Check(loggerName config.LoggerName, confFilePath *string, flagNoColor *bool
 			opts.UseNoopForwarder = true
 			opts.UseNoopEventPlatformForwarder = true
 			opts.UseOrchestratorForwarder = false
-			demux := aggregator.InitAndStartAgentDemultiplexer(opts, hostnameDetected)
+			demux := aggregator.InitAndStartAgentDemultiplexer(opts, hname)
 
 			common.LoadComponents(context.Background(), config.Datadog.GetString("confd_path"))
 

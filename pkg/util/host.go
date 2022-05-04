@@ -12,7 +12,7 @@ import (
 	"net"
 )
 
-// Fqdn returns the FQDN for the host if any
+// Fqdn returns the FQDN for the host if any (this uses a DNS forward and reverse round trip).
 func Fqdn(hostname string) string {
 	addrs, err := net.LookupIP(hostname)
 	if err != nil {

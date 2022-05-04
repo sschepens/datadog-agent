@@ -208,11 +208,11 @@ func start(cmd *cobra.Command, args []string) error {
 	log.Infof("Got APIClient connection")
 
 	// Get hostname as aggregator requires hostname
-	hostnameDetected, err := hostname.Get(context.TODO())
+	hname, err := hostname.Get(context.TODO())
 	if err != nil {
 		return log.Errorf("Error while getting hostname, exiting: %v", err)
 	}
-	log.Infof("Hostname is: %s", hostnameDetected)
+	log.Infof("Hostname is: %s", hname)
 
 	// setup the forwarder
 	keysPerDomain, err := config.GetMultipleEndpoints()
@@ -229,7 +229,7 @@ func start(cmd *cobra.Command, args []string) error {
 	opts := aggregator.DefaultDemultiplexerOptions(forwarderOpts)
 	opts.UseEventPlatformForwarder = false
 	opts.UseContainerLifecycleForwarder = false
-	demux := aggregator.InitAndStartAgentDemultiplexer(opts, hostnameDetected)
+	demux := aggregator.InitAndStartAgentDemultiplexer(opts, hname)
 	demux.AddAgentStartupTelemetry(fmt.Sprintf("%s - Datadog Cluster Agent", version.AgentVersion))
 
 	le, err := leaderelection.GetLeaderEngine()
@@ -271,7 +271,7 @@ func start(cmd *cobra.Command, args []string) error {
 			log.Errorf("Failed to generate or retrieve the cluster ID")
 		}
 
-		clusterName := clustername.GetClusterName(context.TODO(), hostnameDetected)
+		clusterName := clustername.GetClusterName(context.TODO(), hname)
 		if clusterName == "" {
 			log.Warn("Failed to auto-detect a Kubernetes cluster name. We recommend you set it manually via the cluster_name config option")
 		}

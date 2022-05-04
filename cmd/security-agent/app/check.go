@@ -116,12 +116,12 @@ func runCheck(cmd *cobra.Command, confPathArray []string, args []string) error {
 		ruleID = args[0]
 	}
 
-	hostnameDetected, err := hostname.Get(context.TODO())
+	hname, err := hostname.Get(context.TODO())
 	if err != nil {
 		return err
 	}
 
-	options = append(options, checks.WithHostname(hostnameDetected))
+	options = append(options, checks.WithHostname(hname))
 
 	stopper = startstop.NewSerialStopper()
 	defer stopper.Stop()

@@ -61,7 +61,7 @@ func fromHostnameFile(ctx context.Context, _ string) (string, error) {
 	return hostname, err
 }
 
-func fromFarget(ctx context.Context, _ string) (string, error) {
+func fromFargate(ctx context.Context, _ string) (string, error) {
 	// If we're running on fargate we strip the hostname
 	if fargate.IsFargateInstance(ctx) {
 		return "", nil

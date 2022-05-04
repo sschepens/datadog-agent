@@ -20,8 +20,8 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
-// callProvider returns the hostname for a specific Provider if it was register
-func callProvider(ctx context.Context, provider func(context.Context) (string, error), providerName string) (string, error) {
+// callContainerProvider returns the hostname for a specific Provider if it was register
+func callContainerProvider(ctx context.Context, provider func(context.Context) (string, error), providerName string) (string, error) {
 	log.Debugf("GetHostname trying provider '%s' ...", providerName)
 	name, err := provider(ctx)
 	if err != nil {
@@ -40,16 +40,16 @@ func fromContainer(ctx context.Context, _ string) (string, error) {
 
 	// Cluster-agent logic: Kube apiserver
 	if config.IsFeaturePresent(config.Kubernetes) {
-		return callProvider(ctx, kubernetes.GetKubeAPIServerHostname, "kube_apiserver")
+		return callContainerProvider(ctx, kubernetes.GetKubeAPIServerHostname, "kube_apiserver")
 	}
 
 	// Node-agent logic: docker or kubelet
 	if config.IsFeaturePresent(config.Docker) {
-		return callProvider(ctx, docker.GetHostname, "docker")
+		return callContainerProvider(ctx, docker.GetHostname, "docker")
 	}
 
 	if config.IsFeaturePresent(config.Kubernetes) {
-		return callProvider(ctx, kubelet.GetHostname, "kubelet")
+		return callContainerProvider(ctx, kubelet.GetHostname, "kubelet")
 	}
 
 	return "", fmt.Errorf("no container environment detected")

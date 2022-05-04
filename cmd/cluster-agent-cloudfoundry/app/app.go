@@ -155,11 +155,11 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	// get hostname
-	hostnameDetected, err := hostname.Get(context.TODO())
+	hname, err := hostname.Get(context.TODO())
 	if err != nil {
 		return log.Errorf("Error while getting hostname, exiting: %v", err)
 	}
-	log.Infof("Hostname is: %s", hostnameDetected)
+	log.Infof("Hostname is: %s", hname)
 
 	keysPerDomain, err := config.GetMultipleEndpoints()
 	if err != nil {
@@ -171,7 +171,7 @@ func run(cmd *cobra.Command, args []string) error {
 	opts.UseEventPlatformForwarder = false
 	opts.UseOrchestratorForwarder = false
 	opts.UseContainerLifecycleForwarder = false
-	demux := aggregator.InitAndStartAgentDemultiplexer(opts, hostnameDetected)
+	demux := aggregator.InitAndStartAgentDemultiplexer(opts, hname)
 	demux.AddAgentStartupTelemetry(fmt.Sprintf("%s - Datadog Cluster Agent", version.AgentVersion))
 
 	log.Infof("Datadog Cluster Agent is now running.")

@@ -18,7 +18,10 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
-const configProvider = "configuration"
+const (
+	configProvider  = "configuration"
+	fargateProvider = "fargate"
+)
 
 var (
 	hostnameExpvars  = expvar.NewMap("hostname")
@@ -74,8 +77,8 @@ var providerCatalog = []provider{
 		expvarName:      "'hostname_file' configuration/environment",
 	},
 	{
-		name:            "fargate",
-		cb:              fromFarget,
+		name:            fargateProvider,
+		cb:              fromFargate,
 		stopIfSucessful: true,
 		expvarName:      "fargate",
 	},
@@ -132,7 +135,9 @@ func saveHostname(cacheHostnameKey string, hostname string, providerName string)
 	}
 
 	cache.Cache.Set(cacheHostnameKey, data, cache.NoExpiration)
-	if providerName != "" && providerName != "fargate" {
+	// We don't have a hostname on fargate. 'fromFargate' will return an empty hostname and we don't want to show it
+	// in the status page.
+	if providerName != "" && providerName != fargateProvider {
 		hostnameProvider.Set(providerName)
 		inventories.SetAgentMetadata(inventories.AgentHostnameSource, providerName)
 	}
@@ -151,7 +156,6 @@ func GetWithProvider(ctx context.Context) (Data, error) {
 	var err error
 	var hostname string
 	var providerName string
-	//providers := config.Datadog.GetStringSlice("hostname_providers")
 
 	for _, p := range providerCatalog {
 		log.Debugf("trying to get hostname from '%s' provider", p.name)

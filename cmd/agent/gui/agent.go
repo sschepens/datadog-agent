@@ -83,14 +83,14 @@ func getVersion(w http.ResponseWriter, r *http.Request) {
 
 // Sends the agent's hostname
 func getHostname(w http.ResponseWriter, r *http.Request) {
-	hostnameDetected, e := hostname.Get(r.Context())
+	hname, e := hostname.Get(r.Context())
 	if e != nil {
 		log.Errorf("Error getting hostname: " + e.Error())
 		w.Write([]byte("Error: " + e.Error()))
 		return
 	}
 
-	res, _ := json.Marshal(hostnameDetected)
+	res, _ := json.Marshal(hname)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(res)
 }

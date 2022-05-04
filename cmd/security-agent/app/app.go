@@ -249,11 +249,11 @@ func RunAgent(ctx context.Context) (err error) {
 
 	// get hostname
 	// FIXME: use gRPC cross-agent communication API to retrieve hostname
-	hostnameDetected, err := hostname.Get(context.TODO())
+	hname, err := hostname.Get(context.TODO())
 	if err != nil {
 		return log.Errorf("Error while getting hostname, exiting: %v", err)
 	}
-	log.Infof("Hostname is: %s", hostnameDetected)
+	log.Infof("Hostname is: %s", hname)
 
 	// setup the forwarder
 	keysPerDomain, err := coreconfig.GetMultipleEndpoints()
@@ -266,7 +266,7 @@ func RunAgent(ctx context.Context) (err error) {
 	opts.UseEventPlatformForwarder = false
 	opts.UseOrchestratorForwarder = false
 	opts.UseContainerLifecycleForwarder = false
-	demux := aggregator.InitAndStartAgentDemultiplexer(opts, hostnameDetected)
+	demux := aggregator.InitAndStartAgentDemultiplexer(opts, hname)
 	demux.AddAgentStartupTelemetry(fmt.Sprintf("%s - Datadog Security Agent", version.AgentVersion))
 
 	stopper = startstop.NewSerialStopper()
@@ -291,7 +291,7 @@ func RunAgent(ctx context.Context) (err error) {
 		}
 	}
 
-	complianceAgent, err := startCompliance(hostnameDetected, stopper, statsdClient)
+	complianceAgent, err := startCompliance(hname, stopper, statsdClient)
 	if err != nil {
 		return err
 	}
@@ -301,7 +301,7 @@ func RunAgent(ctx context.Context) (err error) {
 	}
 
 	// start runtime security agent
-	runtimeAgent, err := startRuntimeSecurity(hostnameDetected, stopper, statsdClient)
+	runtimeAgent, err := startRuntimeSecurity(hname, stopper, statsdClient)
 	if err != nil {
 		return err
 	}
