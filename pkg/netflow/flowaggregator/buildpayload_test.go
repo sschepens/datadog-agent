@@ -42,6 +42,7 @@ func Test_buildPayload(t *testing.T) {
 				OutputInterface: 20,
 				Tos:             3,
 				NextHop:         net.IP([]byte{10, 10, 10, 30}).String(),
+				TCPFlags:        uint32(19), // 19 = SYN,ACK,FIN
 			},
 			expectedPayload: payload.FlowPayload{
 				FlowType:     "netflow9",
@@ -59,19 +60,19 @@ func Test_buildPayload(t *testing.T) {
 				Source: payload.Endpoint{
 					IP:   "10.10.10.10",
 					Port: 2000,
-					Mac:  "00:00:00:00:00:00",
+					Mac:  "00:00:00:00:00:0a",
 					Mask: "0.0.0.0/24",
 				},
 				Destination: payload.Endpoint{IP: "10.10.10.20",
 					Port: 80,
-					Mac:  "",
-					Mask: "",
+					Mac:  "00:00:00:00:00:14",
+					Mask: "0.0.0.0/24",
 				},
 				Ingress:   payload.ObservationPoint{Interface: payload.Interface{Index: 10}},
 				Egress:    payload.ObservationPoint{Interface: payload.Interface{Index: 20}},
 				Namespace: "my-namespace",
 				Host:      "my-hostname",
-				TCPFlags:  []string{"SYN", "ACK"},
+				TCPFlags:  []string{"FIN", "SYN", "ACK"},
 				NextHop: payload.NextHop{
 					IP: "10.10.10.30",
 				},

@@ -23,6 +23,10 @@ func setMockTimeNow(newTime time.Time) {
 }
 
 func Test_flowAccumulator_add(t *testing.T) {
+	synFlag := uint32(2)
+	ackFlag := uint32(16)
+	synAckFlag := uint32(18)
+
 	// Given
 	flowA1 := &common.Flow{
 		FlowType:       common.TypeNetFlow9,
@@ -36,6 +40,7 @@ func Test_flowAccumulator_add(t *testing.T) {
 		IPProtocol:     uint32(6),
 		SrcPort:        uint32(2000),
 		DstPort:        uint32(80),
+		TCPFlags:       synFlag,
 	}
 	flowA2 := &common.Flow{
 		FlowType:       common.TypeNetFlow9,
@@ -49,6 +54,7 @@ func Test_flowAccumulator_add(t *testing.T) {
 		IPProtocol:     uint32(6),
 		SrcPort:        uint32(2000),
 		DstPort:        uint32(80),
+		TCPFlags:       ackFlag,
 	}
 	flowB1 := &common.Flow{
 		FlowType:       common.TypeNetFlow9,
@@ -81,6 +87,7 @@ func Test_flowAccumulator_add(t *testing.T) {
 	assert.Equal(t, uint64(6), wrappedFlowA.flow.Packets)
 	assert.Equal(t, uint64(1234568), wrappedFlowA.flow.StartTimestamp)
 	assert.Equal(t, uint64(1234579), wrappedFlowA.flow.EndTimestamp)
+	assert.Equal(t, synAckFlag, wrappedFlowA.flow.TCPFlags)
 
 	wrappedFlowB := acc.flows[flowB1.AggregationHash()]
 	assert.Equal(t, net.IP([]byte{10, 10, 10, 10}).String(), wrappedFlowB.flow.SrcAddr)

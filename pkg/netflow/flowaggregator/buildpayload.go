@@ -3,6 +3,7 @@ package flowaggregator
 import (
 	"context"
 	"fmt"
+	"github.com/DataDog/datadog-agent/pkg/netflow/enrichment"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 
 	coreutil "github.com/DataDog/datadog-agent/pkg/util"
@@ -12,14 +13,6 @@ import (
 )
 
 func buildPayload(aggFlow *common.Flow) payload.FlowPayload {
-	var direction string
-
-	if aggFlow.Direction == 0 {
-		direction = "ingress"
-	} else {
-		direction = "egress"
-	}
-
 	hostname, err := coreutil.GetHostname(context.TODO())
 	if err != nil {
 		log.Warnf("Error getting the hostname: %v", err)
@@ -33,7 +26,7 @@ func buildPayload(aggFlow *common.Flow) payload.FlowPayload {
 		// TODO: Implement Tos
 		FlowType:     string(aggFlow.FlowType),
 		SamplingRate: aggFlow.SamplingRate,
-		Direction:    direction,
+		Direction:    enrichment.RemapDirection(aggFlow.Direction),
 		Exporter: payload.Exporter{
 			IP: aggFlow.ExporterAddr,
 		},
@@ -46,14 +39,16 @@ func buildPayload(aggFlow *common.Flow) payload.FlowPayload {
 		Source: payload.Endpoint{
 			IP:   aggFlow.SrcAddr,
 			Port: aggFlow.SrcPort,
-			// TODO: implement Mac
 			// TODO: implement Mask
-			Mac:  "00:00:00:00:00:00",
+			Mac: enrichment.FormatMacAddress(aggFlow.SrcMac),
+			//Mask: enrichment.FormatMask(aggFlow.SrcMask),
 			Mask: "0.0.0.0/24",
 		},
 		Destination: payload.Endpoint{
 			IP:   aggFlow.DstAddr,
 			Port: aggFlow.DstPort,
+			Mac:  enrichment.FormatMacAddress(aggFlow.DstMac),
+			Mask: "0.0.0.0/24",
 		},
 		Ingress: payload.ObservationPoint{
 			Interface: payload.Interface{
@@ -68,7 +63,7 @@ func buildPayload(aggFlow *common.Flow) payload.FlowPayload {
 		Namespace: aggFlow.Namespace,
 		Host:      hostname,
 		// TODO: implement tcp_flags
-		TCPFlags: []string{"SYN", "ACK"},
+		TCPFlags: enrichment.FormatFCPFlags(aggFlow.TCPFlags),
 		NextHop: payload.NextHop{
 			IP: aggFlow.NextHop,
 		},
