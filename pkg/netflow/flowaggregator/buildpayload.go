@@ -19,6 +19,8 @@ func buildPayload(aggFlow *common.Flow) payload.FlowPayload {
 		hostname = ""
 	}
 
+	// TODO: format ipProtocol
+	// TODO: format etherType
 	ipProtocol := fmt.Sprintf("%d", aggFlow.IPProtocol)
 	etherType := fmt.Sprintf("%d", aggFlow.EtherType)
 
@@ -42,13 +44,13 @@ func buildPayload(aggFlow *common.Flow) payload.FlowPayload {
 			// TODO: implement Mask
 			Mac: enrichment.FormatMacAddress(aggFlow.SrcMac),
 			//Mask: enrichment.FormatMask(aggFlow.SrcMask),
-			Mask: "0.0.0.0/24",
+			Mask: fmt.Sprintf("%d", aggFlow.SrcMask),
 		},
 		Destination: payload.Endpoint{
 			IP:   aggFlow.DstAddr,
 			Port: aggFlow.DstPort,
 			Mac:  enrichment.FormatMacAddress(aggFlow.DstMac),
-			Mask: "0.0.0.0/24",
+			Mask: fmt.Sprintf("%d", aggFlow.DstMask),
 		},
 		Ingress: payload.ObservationPoint{
 			Interface: payload.Interface{
@@ -62,8 +64,7 @@ func buildPayload(aggFlow *common.Flow) payload.FlowPayload {
 		},
 		Namespace: aggFlow.Namespace,
 		Host:      hostname,
-		// TODO: implement tcp_flags
-		TCPFlags: enrichment.FormatFCPFlags(aggFlow.TCPFlags),
+		TCPFlags:  enrichment.FormatFCPFlags(aggFlow.TCPFlags),
 		NextHop: payload.NextHop{
 			IP: aggFlow.NextHop,
 		},
