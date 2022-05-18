@@ -275,24 +275,24 @@ type Process struct {
 
 	FileEvent FileEvent `field:"file" msg:"file"`
 
-	ContainerID   string   `field:"container.id" msg:"container_id"` // Container ID
-	ContainerTags []string `field:"-" msg:"container_tags"`
+	ContainerID   string   `field:"container.id" msg:"container_id,omitempty"` // Container ID
+	ContainerTags []string `field:"-" msg:"container_tags,omitempty"`
 
-	SpanID  uint64 `field:"-" msg:"span_id"`
-	TraceID uint64 `field:"-" msg:"trace_id"`
+	SpanID  uint64 `field:"-" msg:"span_id,omitempty"`
+	TraceID uint64 `field:"-" msg:"trace_id,omitempty"`
 
-	TTYName string `field:"tty_name" msg:"tty"` // Name of the TTY associated with the process
-	Comm    string `field:"comm" msg:"comm"`    // Comm attribute of the process
+	TTYName string `field:"tty_name" msg:"tty,omitempty"` // Name of the TTY associated with the process
+	Comm    string `field:"comm" msg:"comm"`              // Comm attribute of the process
 
 	// pid_cache_t
 	ForkTime time.Time `field:"-" msg:"fork_time"`
 	ExitTime time.Time `field:"-" msg:"exit_time"`
 	ExecTime time.Time `field:"-" msg:"exec_time"`
 
-	CreatedAt uint64 `field:"created_at,ResolveProcessCreatedAt" msg:"created_at"` // Timestamp of the creation of the process
+	CreatedAt uint64 `field:"created_at,ResolveProcessCreatedAt" msg:"-"` // Timestamp of the creation of the process
 
-	Cookie uint32 `field:"cookie" msg:"cookie"` // Cookie of the process
-	PPid   uint32 `field:"ppid" msg:"ppid"`     // Parent process ID
+	Cookie uint32 `field:"cookie" msg:"cookie,omitempty"` // Cookie of the process
+	PPid   uint32 `field:"ppid" msg:"ppid"`               // Parent process ID
 
 	// credentials_t section of pid_cache_t
 	Credentials `msg:"credentials"`
@@ -300,29 +300,29 @@ type Process struct {
 	ArgsID uint32 `field:"-" msg:"-"`
 	EnvsID uint32 `field:"-" msg:"-"`
 
-	ArgsEntry *ArgsEntry `field:"-" msg:"args"`
-	EnvsEntry *EnvsEntry `field:"-" msg:"envs"`
+	ArgsEntry *ArgsEntry `field:"-" msg:"-"`
+	EnvsEntry *EnvsEntry `field:"-" msg:"-"`
 
 	// defined to generate accessors, ArgsTruncated and EnvsTruncated are used during by unmarshaller
-	Argv0         string   `field:"argv0,ResolveProcessArgv0:100" msg:"-"`                                                                                                                     // First argument of the process
+	Argv0         string   `field:"argv0,ResolveProcessArgv0:100" msg:"argv0"`                                                                                                                 // First argument of the process
 	Args          string   `field:"args,ResolveProcessArgs:100" msg:"-"`                                                                                                                       // Arguments of the process (as a string)
 	Argv          []string `field:"argv,ResolveProcessArgv:100;args_flags,ResolveProcessArgsFlags,,cacheless_resolution;args_options,ResolveProcessArgsOptions,,cacheless_resolution" msg:"-"` // Arguments of the process (as an array)
 	ArgsTruncated bool     `field:"args_truncated,ResolveProcessArgsTruncated" msg:"-"`                                                                                                        // Indicator of arguments truncation
-	Envs          []string `field:"envs,ResolveProcessEnvs:100" msg:"-"`                                                                                                                       // Environment variable names of the process
+	Envs          []string `field:"envs,ResolveProcessEnvs:100" msg:"envs,omitempty"`                                                                                                          // Environment variable names of the process
 	Envp          []string `field:"envp,ResolveProcessEnvp:100" msg:"-"`                                                                                                                       // Environment variables of the process
-	EnvsTruncated bool     `field:"envs_truncated,ResolveProcessEnvsTruncated" msg:"-"`                                                                                                        // Indicator of environment variables truncation
+	EnvsTruncated bool     `field:"envs_truncated,ResolveProcessEnvsTruncated" msg:"envs_truncated"`                                                                                           // Indicator of environment variables truncation
 
 	// cache version
 	ScrubbedArgvResolved  bool           `field:"-" msg:"-"`
-	ScrubbedArgv          []string       `field:"-" msg:"-"`
-	ScrubbedArgsTruncated bool           `field:"-" msg:"-"`
+	ScrubbedArgv          []string       `field:"-" msg:"argv,omitempty"`
+	ScrubbedArgsTruncated bool           `field:"-" msg:"argv_truncated"`
 	Variables             eval.Variables `field:"-" msg:"-"`
 }
 
 // SpanContext describes a span context
 type SpanContext struct {
-	SpanID  uint64 `field:"_" msg:"span_id"`
-	TraceID uint64 `field:"_" msg:"trace_id"`
+	SpanID  uint64 `field:"_" msg:"span_id,omitempty"`
+	TraceID uint64 `field:"_" msg:"trace_id,omitempty"`
 }
 
 // ExecEvent represents a exec event
@@ -334,9 +334,9 @@ type ExecEvent struct {
 // FileFields holds the information required to identify a file
 type FileFields struct {
 	UID   uint32 `field:"uid" msg:"uid"`                                              // UID of the file's owner
-	User  string `field:"user,ResolveFileFieldsUser" msg:"user"`                      // User of the file's owner
+	User  string `field:"user,ResolveFileFieldsUser" msg:"user,omitempty"`            // User of the file's owner
 	GID   uint32 `field:"gid" msg:"gid"`                                              // GID of the file's owner
-	Group string `field:"group,ResolveFileFieldsGroup" msg:"group"`                   // Group of the file's owner
+	Group string `field:"group,ResolveFileFieldsGroup" msg:"group,omitempty"`         // Group of the file's owner
 	Mode  uint16 `field:"mode;rights,ResolveRights,,cacheless_resolution" msg:"mode"` // Mode/rights of the file
 	CTime uint64 `field:"change_time" msg:"ctime"`                                    // Change time of the file
 	MTime uint64 `field:"modification_time" msg:"mtime"`                              // Modification time of the file
@@ -595,7 +595,7 @@ func (it *ProcessAncestorsIterator) Next() unsafe.Pointer {
 type ProcessContext struct {
 	Process
 
-	Ancestor *ProcessCacheEntry `field:"ancestors,,ProcessAncestorsIterator" msg:"ancestor"`
+	Ancestor *ProcessCacheEntry `field:"ancestors,,ProcessAncestorsIterator" msg:"ancestor,omitempty"`
 }
 
 // PIDContext holds the process context of an kernel event
@@ -635,8 +635,8 @@ type SetXAttrEvent struct {
 
 // SyscallEvent contains common fields for all the event
 type SyscallEvent struct {
-	Retval int64 `field:"retval" msg:"retval"` // Return value of the syscall
-	Async  bool  `field:"async" msg:"async"`   // True if the syscall was asynchronous
+	Retval int64 `field:"retval" msg:"retval,omitempty"` // Return value of the syscall
+	Async  bool  `field:"async" msg:"async,omitempty"`   // True if the syscall was asynchronous
 }
 
 // UnlinkEvent represents an unlink event
