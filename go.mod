@@ -89,7 +89,7 @@ require (
 	github.com/blabber/go-freebsd-sysctl v0.0.0-20201130114544-503969f39d8f
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
-	github.com/cilium/ebpf v0.8.2-0.20220404151855-0d439865ca15
+	github.com/cilium/ebpf v0.8.2-0.20220510160849-265306fc2801
 	github.com/clbanning/mxj v1.8.4
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20210621174645-7773f7e22665
 	github.com/containerd/cgroups v1.0.2
@@ -411,6 +411,7 @@ require github.com/containernetworking/plugins v1.1.1 // indirect
 
 require (
 	github.com/Sirupsen/logrus v1.0.6 // indirect
+	github.com/florianl/go-tc v0.3.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.50.0 // indirect
 )
 
@@ -437,5 +438,7 @@ replace (
 	github.com/go-logr/logr/funcr => ./internal/patch/logr/funcr
 	github.com/go-logr/stdr => github.com/go-logr/stdr v0.4.0
 )
+
+replace github.com/DataDog/ebpf-manager => ../ebpf-manager
 
 replace github.com/vishvananda/netlink => github.com/DataDog/netlink v1.0.1-0.20220504230202-f7323aba1f6c
