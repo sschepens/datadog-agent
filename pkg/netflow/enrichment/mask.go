@@ -1,4 +1,5 @@
-//package enrichment
+package enrichment
+
 //
 //import (
 //	"encoding/binary"
