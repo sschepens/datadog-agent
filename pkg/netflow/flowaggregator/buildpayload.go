@@ -3,9 +3,6 @@ package flowaggregator
 import (
 	"fmt"
 	"github.com/DataDog/datadog-agent/pkg/netflow/enrichment"
-	"github.com/DataDog/datadog-agent/pkg/util/log"
-
-	coreutil "github.com/DataDog/datadog-agent/pkg/util"
 
 	"github.com/DataDog/datadog-agent/pkg/netflow/common"
 	"github.com/DataDog/datadog-agent/pkg/netflow/payload"
