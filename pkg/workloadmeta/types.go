@@ -58,7 +58,8 @@ type Store interface {
 	ListContainers() ([]*Container, error)
 
 	// ListContainersWithFilter returns all the containers for which the passed
-	// filter evaluates to true.
+	// filter evaluates to true. Passing a nil filter returns all the
+	// containers.
 	ListContainersWithFilter(filter ContainerFilterFunc) ([]*Container, error)
 
 	// GetKubernetesPod returns metadata about a Kubernetes pod.  It fetches

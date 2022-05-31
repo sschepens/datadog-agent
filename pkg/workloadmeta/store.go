@@ -249,36 +249,26 @@ func (s *store) GetContainer(id string) (*Container, error) {
 
 // ListContainers implements Store#ListContainers.
 func (s *store) ListContainers() ([]*Container, error) {
+	return s.ListContainersWithFilter(nil)
+}
+
+// ListContainersWithFilter implements Store#ListContainersWithFilter
+func (s *store) ListContainersWithFilter(filter ContainerFilterFunc) ([]*Container, error) {
 	entities, err := s.listEntitiesByKind(KindContainer)
 	if err != nil {
 		return nil, err
 	}
 
-	// Not very efficient
 	containers := make([]*Container, 0, len(entities))
 	for _, entity := range entities {
-		containers = append(containers, entity.(*Container))
-	}
+		container := entity.(*Container)
 
-	return containers, nil
-}
-
-// ListContainersWithFilter implements Store#ListContainersWithFilter
-func (s *store) ListContainersWithFilter(filter ContainerFilterFunc) ([]*Container, error) {
-	allContainers, err := s.ListContainers()
-	if err != nil {
-		return nil, err
-	}
-
-	var res []*Container
-
-	for _, container := range allContainers {
-		if filter(container) {
-			res = append(res, container)
+		if filter == nil || filter(container) {
+			containers = append(containers, container)
 		}
 	}
 
-	return res, nil
+	return containers, nil
 }
 
 // GetKubernetesPod implements Store#GetKubernetesPod
