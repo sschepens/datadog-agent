@@ -2,6 +2,7 @@ package flowaggregator
 
 import (
 	"encoding/json"
+	"sync/atomic"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/aggregator"
@@ -16,16 +17,19 @@ const flowAggregatorFlushInterval = 10 * time.Second
 
 // FlowAggregator is used for space and time aggregation of NetFlow flows
 type FlowAggregator struct {
-	flowIn        chan *common.Flow
-	flushInterval time.Duration
-	flowAcc       *flowAccumulator
-	sender        aggregator.Sender
-	stopChan      chan struct{}
-	logPayload    bool
+	flowIn            chan *common.Flow
+	flushInterval     time.Duration
+	flowAcc           *flowAccumulator
+	sender            aggregator.Sender
+	stopChan          chan struct{}
+	logPayload        bool
+	receivedFlowCount uint64
+	flushedFlowCount  uint64
+	hostname          string
 }
 
 // NewFlowAggregator returns a new FlowAggregator
-func NewFlowAggregator(sender aggregator.Sender, config *config.NetflowConfig) *FlowAggregator {
+func NewFlowAggregator(sender aggregator.Sender, config *config.NetflowConfig, hostname string) *FlowAggregator {
 	return &FlowAggregator{
 		flowIn:        make(chan *common.Flow, config.AggregatorBufferSize),
 		flowAcc:       newFlowAccumulator(time.Duration(config.AggregatorFlushInterval) * time.Second),
@@ -33,6 +37,7 @@ func NewFlowAggregator(sender aggregator.Sender, config *config.NetflowConfig) *
 		sender:        sender,
 		stopChan:      make(chan struct{}),
 		logPayload:    config.LogPayloads,
+		hostname:      hostname,
 	}
 }
 
@@ -60,7 +65,7 @@ func (agg *FlowAggregator) run() {
 			log.Info("Stopping aggregator")
 			return
 		case flow := <-agg.flowIn:
-			agg.sender.Count("datadog.newflow.aggregator.flows_received", 1, "", flow.TelemetryTags())
+			atomic.AddUint64(&agg.receivedFlowCount, 1)
 			agg.flowAcc.add(flow)
 		}
 	}
@@ -68,14 +73,18 @@ func (agg *FlowAggregator) run() {
 
 func (agg *FlowAggregator) sendFlows(flows []*common.Flow) {
 	for _, flow := range flows {
-		agg.sender.Count("datadog.newflow.aggregator.flows_flushed", 1, "", flow.TelemetryTags())
-		flowPayload := buildPayload(flow)
+		flowPayload := buildPayload(flow, agg.hostname)
 		payloadBytes, err := json.Marshal(flowPayload)
 		if err != nil {
 			log.Errorf("Error marshalling device metadata: %s", err)
 			continue
 		}
 		agg.sender.EventPlatformEvent(string(payloadBytes), epforwarder.EventTypeNetworkDevicesNetFlow)
+
+		// For debug purposes print out all flows
+		if agg.logPayload {
+			log.Debugf("flushed flow: %s", string(payloadBytes))
+		}
 	}
 }
 
@@ -85,7 +94,7 @@ func (agg *FlowAggregator) flushLoop() {
 	if agg.flushInterval > 0 {
 		flushTicker = time.NewTicker(agg.flushInterval).C
 	} else {
-		log.Debugf("flushInterval set to 0: will never flush automatically")
+		log.Debug("flushInterval set to 0: will never flush automatically")
 	}
 
 	for {
@@ -102,20 +111,18 @@ func (agg *FlowAggregator) flushLoop() {
 
 // Flush flushes the aggregator
 func (agg *FlowAggregator) flush() int {
-	flows := agg.flowAcc.flush()
-	log.Debugf("Flushing %d flows to the forwarder", len(flows))
-	if len(flows) == 0 {
+	flowsToFlush := agg.flowAcc.flush()
+	log.Debugf("Flushing %d flows to the forwarder", len(flowsToFlush))
+	if len(flowsToFlush) == 0 {
 		return 0
 	}
 	// TODO: Add flush stats to agent telemetry e.g. aggregator newFlushCountStats()
 
-	// For debug purposes print out all flows
-	if agg.logPayload {
-		log.Debug("Flushing the following Events:")
-		for _, flow := range flows {
-			log.Debugf("flow: %s", flow.AsJSONString())
-		}
-	}
-	agg.sendFlows(flows)
-	return len(flows)
+	agg.sendFlows(flowsToFlush)
+
+	atomic.AddUint64(&agg.flushedFlowCount, uint64(len(flowsToFlush)))
+	agg.sender.MonotonicCount("datadog.netflow.aggregator.flows_received", float64(atomic.LoadUint64(&agg.receivedFlowCount)), "", nil)
+	agg.sender.MonotonicCount("datadog.netflow.aggregator.flows_flushed", float64(atomic.LoadUint64(&agg.flushedFlowCount)), "", nil)
+
+	return len(flowsToFlush)
 }

@@ -1,7 +1,6 @@
 package flowaggregator
 
 import (
-	"context"
 	"fmt"
 	"github.com/DataDog/datadog-agent/pkg/netflow/enrichment"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
@@ -12,13 +11,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/netflow/payload"
 )
 
-func buildPayload(aggFlow *common.Flow) payload.FlowPayload {
-	hostname, err := coreutil.GetHostname(context.TODO())
-	if err != nil {
-		log.Warnf("Error getting the hostname: %v", err)
-		hostname = ""
-	}
-
+func buildPayload(aggFlow *common.Flow, hostname string) payload.FlowPayload {
 	// TODO: format ipProtocol
 	// TODO: format etherType
 	ipProtocol := fmt.Sprintf("%d", aggFlow.IPProtocol)
@@ -30,7 +23,7 @@ func buildPayload(aggFlow *common.Flow) payload.FlowPayload {
 		SamplingRate: aggFlow.SamplingRate,
 		Direction:    enrichment.RemapDirection(aggFlow.Direction),
 		Exporter: payload.Exporter{
-			IP: aggFlow.ExporterAddr,
+			IP: common.IPBytesToString(aggFlow.ExporterAddr),
 		},
 		Start:      aggFlow.StartTimestamp,
 		End:        aggFlow.EndTimestamp,
@@ -39,7 +32,7 @@ func buildPayload(aggFlow *common.Flow) payload.FlowPayload {
 		EtherType:  etherType,
 		IPProtocol: ipProtocol,
 		Source: payload.Endpoint{
-			IP:   aggFlow.SrcAddr,
+			IP:   common.IPBytesToString(aggFlow.SrcAddr),
 			Port: aggFlow.SrcPort,
 			// TODO: implement Mask
 			Mac: enrichment.FormatMacAddress(aggFlow.SrcMac),
@@ -47,7 +40,7 @@ func buildPayload(aggFlow *common.Flow) payload.FlowPayload {
 			Mask: fmt.Sprintf("%d", aggFlow.SrcMask),
 		},
 		Destination: payload.Endpoint{
-			IP:   aggFlow.DstAddr,
+			IP:   common.IPBytesToString(aggFlow.DstAddr),
 			Port: aggFlow.DstPort,
 			Mac:  enrichment.FormatMacAddress(aggFlow.DstMac),
 			Mask: fmt.Sprintf("%d", aggFlow.DstMask),
@@ -66,7 +59,7 @@ func buildPayload(aggFlow *common.Flow) payload.FlowPayload {
 		Host:      hostname,
 		TCPFlags:  enrichment.FormatFCPFlags(aggFlow.TCPFlags),
 		NextHop: payload.NextHop{
-			IP: aggFlow.NextHop,
+			IP: common.IPBytesToString(aggFlow.NextHop),
 		},
 	}
 }

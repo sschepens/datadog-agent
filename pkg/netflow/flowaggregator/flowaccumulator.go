@@ -20,7 +20,7 @@ type flowWrapper struct {
 
 // flowAccumulator is used to accumulate aggregated flows
 type flowAccumulator struct {
-	flows             map[string]flowWrapper
+	flows             map[uint64]flowWrapper
 	mu                sync.Mutex
 	flowFlushInterval time.Duration
 	flowContextTTL    time.Duration
@@ -36,7 +36,7 @@ func newFlowWrapper(flow *common.Flow) flowWrapper {
 
 func newFlowAccumulator(aggregatorFlushInterval time.Duration) *flowAccumulator {
 	return &flowAccumulator{
-		flows:             make(map[string]flowWrapper),
+		flows:             make(map[uint64]flowWrapper),
 		flowFlushInterval: aggregatorFlushInterval,
 		flowContextTTL:    aggregatorFlushInterval * 5,
 	}
@@ -45,19 +45,19 @@ func newFlowAccumulator(aggregatorFlushInterval time.Duration) *flowAccumulator 
 // flush will flush specific flow context (distinct hash) if nextFlush is reached
 // once a flow context is flushed nextFlush will be updated to the next flush time
 // Specific flow context in `flowAccumulator.flows` map will be deleted if `flowContextTTL`
-// to avoid keeping flow context that are not seen anymore.
+// is reached to avoid keeping flow context that are not seen anymore.
 func (f *flowAccumulator) flush() []*common.Flow {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	var flows []*common.Flow
+	var flowsToFlush []*common.Flow
 	for key, flow := range f.flows {
 		now := timeNow()
 		if flow.nextFlush.After(now) {
 			continue
 		}
 		if flow.flow != nil {
-			flows = append(flows, flow.flow)
+			flowsToFlush = append(flowsToFlush, flow.flow)
 			flow.lastSuccessfulFlush = now
 			flow.flow = nil
 		} else if flow.lastSuccessfulFlush.Add(f.flowContextTTL).Before(now) {
@@ -68,7 +68,7 @@ func (f *flowAccumulator) flush() []*common.Flow {
 		flow.nextFlush = flow.nextFlush.Add(f.flowFlushInterval)
 		f.flows[key] = flow
 	}
-	return flows
+	return flowsToFlush
 }
 
 func (f *flowAccumulator) add(flowToAdd *common.Flow) {
@@ -78,22 +78,23 @@ func (f *flowAccumulator) add(flowToAdd *common.Flow) {
 	// TODO: handle port direction (see network-http-logger)
 	// TODO: ignore ephemeral ports
 
-	log.Tracef("New Flow (digest=%s): %+v", flowToAdd.AggregationHash(), flowToAdd)
-
-	aggFlow, ok := f.flows[flowToAdd.AggregationHash()]
 	aggHash := flowToAdd.AggregationHash()
+	log.Tracef("New Flow (digest=%d): %+v", aggHash, flowToAdd)
+
+	aggFlow, ok := f.flows[aggHash]
 	if !ok {
 		f.flows[aggHash] = newFlowWrapper(flowToAdd)
-	} else {
-		if aggFlow.flow == nil {
-			aggFlow.flow = flowToAdd
-		} else {
-			aggFlow.flow.Bytes += flowToAdd.Bytes
-			aggFlow.flow.Packets += flowToAdd.Packets
-			aggFlow.flow.StartTimestamp = common.MinUint64(aggFlow.flow.StartTimestamp, flowToAdd.StartTimestamp)
-			aggFlow.flow.EndTimestamp = common.MaxUint64(aggFlow.flow.EndTimestamp, flowToAdd.EndTimestamp)
-			aggFlow.flow.TCPFlags |= flowToAdd.TCPFlags
-		}
-		f.flows[aggHash] = aggFlow
+		return
 	}
+	if aggFlow.flow == nil {
+		aggFlow.flow = flowToAdd
+	} else {
+		// accumulate flowToAdd with existing flow(s) with same hash
+		aggFlow.flow.Bytes += flowToAdd.Bytes
+		aggFlow.flow.Packets += flowToAdd.Packets
+		aggFlow.flow.StartTimestamp = common.MinUint64(aggFlow.flow.StartTimestamp, flowToAdd.StartTimestamp)
+		aggFlow.flow.EndTimestamp = common.MaxUint64(aggFlow.flow.EndTimestamp, flowToAdd.EndTimestamp)
+		aggFlow.flow.TCPFlags |= flowToAdd.TCPFlags
+	}
+	f.flows[aggHash] = aggFlow
 }

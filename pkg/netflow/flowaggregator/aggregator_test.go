@@ -3,14 +3,14 @@ package flowaggregator
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/DataDog/datadog-agent/pkg/aggregator/mocksender"
-	coreconfig "github.com/DataDog/datadog-agent/pkg/config"
 	"github.com/DataDog/datadog-agent/pkg/netflow/common"
 	"github.com/DataDog/datadog-agent/pkg/netflow/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -18,9 +18,8 @@ import (
 func TestAggregator(t *testing.T) {
 	stoppedMu := sync.RWMutex{} // Mutex needed to avoid race condition in test
 
-	coreconfig.Datadog.Set("hostname", "my-hostname")
 	sender := mocksender.NewMockSender("")
-	sender.On("Count", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+	sender.On("MonotonicCount", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 	sender.On("EventPlatformEvent", mock.Anything, mock.Anything).Return()
 	sender.On("Commit").Return()
 	conf := config.NetflowConfig{
@@ -40,20 +39,20 @@ func TestAggregator(t *testing.T) {
 	flow := &common.Flow{
 		Namespace:      "my-ns",
 		FlowType:       common.TypeNetFlow9,
-		ExporterAddr:   net.IP([]byte{127, 0, 0, 1}).String(),
+		ExporterAddr:   []byte{127, 0, 0, 1},
 		StartTimestamp: 1234568,
 		EndTimestamp:   1234569,
 		Bytes:          20,
 		Packets:        4,
-		SrcAddr:        net.IP([]byte{10, 10, 10, 10}).String(),
-		DstAddr:        net.IP([]byte{10, 10, 10, 20}).String(),
+		SrcAddr:        []byte{10, 10, 10, 10},
+		DstAddr:        []byte{10, 10, 10, 20},
 		IPProtocol:     uint32(6),
 		SrcPort:        uint32(2000),
 		DstPort:        uint32(80),
 		TCPFlags:       19,
 	}
 
-	aggregator := NewFlowAggregator(sender, &conf)
+	aggregator := NewFlowAggregator(sender, &conf, "my-hostname")
 	aggregator.flushInterval = 1 * time.Second
 	inChan := aggregator.GetFlowInChan()
 
@@ -65,8 +64,6 @@ func TestAggregator(t *testing.T) {
 		stoppedMu.Unlock()
 	}()
 	inChan <- flow
-
-	time.Sleep(3 * time.Second)
 
 	// language=json
 	event := []byte(`
@@ -120,14 +117,50 @@ func TestAggregator(t *testing.T) {
 	compactEvent := new(bytes.Buffer)
 	err := json.Compact(compactEvent, event)
 	assert.NoError(t, err)
+
+	err = waitForFlowsToBeFlushed(aggregator, 10*time.Second, 1)
+	assert.NoError(t, err)
+
 	sender.AssertEventPlatformEvent(t, compactEvent.String(), "network-devices-netflow")
-	sender.AssertMetric(t, "Count", "datadog.newflow.aggregator.flows_flushed", 1, "", []string{"exporter:127.0.0.1", "flow_type:netflow9"})
+	sender.AssertMetric(t, "MonotonicCount", "datadog.netflow.aggregator.flows_flushed", 1, "", nil)
+	sender.AssertMetric(t, "MonotonicCount", "datadog.netflow.aggregator.flows_received", 1, "", nil)
 
 	// Test aggregator Stop
 	assert.False(t, expectStartExisted)
 	aggregator.Stop()
-	time.Sleep(500 * time.Millisecond)
-	stoppedMu.Lock()
-	assert.True(t, expectStartExisted)
-	stoppedMu.Unlock()
+
+	waitStopTimeout := time.After(2 * time.Second)
+	waitStopTick := time.Tick(100 * time.Millisecond)
+stopLoop:
+	for {
+		select {
+		case <-waitStopTimeout:
+			assert.Fail(t, "timeout waiting for aggregator to be stopped")
+		case <-waitStopTick:
+			stoppedMu.Lock()
+			startExited := expectStartExisted
+			stoppedMu.Unlock()
+			if startExited {
+				break stopLoop
+			}
+		}
+	}
+}
+
+func waitForFlowsToBeFlushed(aggregator *FlowAggregator, timeoutDuration time.Duration, minEvents uint64) error {
+	timeout := time.After(timeoutDuration)
+	tick := time.Tick(500 * time.Millisecond)
+	// Keep trying until we're timed out or got a result or got an error
+	for {
+		select {
+		// Got a timeout! fail with a timeout error
+		case <-timeout:
+			return fmt.Errorf("timeout error waiting for events")
+		// Got a tick, we should check on doSomething()
+		case <-tick:
+			if atomic.LoadUint64(&aggregator.flushedFlowCount) >= minEvents {
+				return nil
+			}
+		}
+	}
 }
