@@ -55,7 +55,7 @@ func (p *Processor) RegisterExtension(id string, extension ProcessorExtension) {
 
 // Run executes the check
 func (p *Processor) Run(sender aggregator.Sender, cacheValidity time.Duration) error {
-	allContainers, err := p.ctrLister.List()
+	allContainers, err := p.ctrLister.ListRunning()
 	if err != nil {
 		return fmt.Errorf("cannot list containers from metadata store, container metrics will be missing, err: %w", err)
 	}
@@ -79,11 +79,6 @@ func (p *Processor) Run(sender aggregator.Sender, cacheValidity time.Duration) e
 	}
 
 	for _, container := range allContainers {
-		// We surely won't get stats for not running containers
-		if !container.State.Running {
-			continue
-		}
-
 		if p.ctrFilter != nil && p.ctrFilter.IsExcluded(container) {
 			log.Tracef("Container excluded due to filter, name: %s - image: %s - namespace: %s", container.Name, container.Image.Name, container.Labels[kubernetes.CriContainerNamespaceLabel])
 			continue

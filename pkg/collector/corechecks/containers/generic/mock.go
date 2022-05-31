@@ -20,8 +20,8 @@ type MockContainerAccessor struct {
 	err        error
 }
 
-// List returns the mocked containers
-func (l *MockContainerAccessor) List() ([]*workloadmeta.Container, error) {
+// ListRunning returns the mocked containers
+func (l *MockContainerAccessor) ListRunning() ([]*workloadmeta.Container, error) {
 	return l.containers, l.err
 }
 

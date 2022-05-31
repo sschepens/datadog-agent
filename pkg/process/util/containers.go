@@ -95,7 +95,7 @@ func NewDefaultContainerProvider() ContainerProvider {
 
 // GetContainers returns containers found on the machine
 func (p *containerProvider) GetContainers(cacheValidity time.Duration, previousContainers map[string]*ContainerRateMetrics) ([]*model.Container, map[string]*ContainerRateMetrics, map[int]string, error) {
-	containersMetadata, err := p.metadataStore.ListContainers()
+	containersMetadata, err := p.metadataStore.ListContainersWithFilter(workloadmeta.GetRunningContainers)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -105,10 +105,6 @@ func (p *containerProvider) GetContainers(cacheValidity time.Duration, previousC
 	rateStats := make(map[string]*ContainerRateMetrics)
 	pidToCid := make(map[int]string)
 	for _, container := range containersMetadata {
-		if !container.State.Running {
-			continue
-		}
-
 		if p.filter != nil && p.filter.IsExcluded(container.Name, container.Image.Name, container.Labels[kubernetes.CriContainerNamespaceLabel]) {
 			continue
 		}
