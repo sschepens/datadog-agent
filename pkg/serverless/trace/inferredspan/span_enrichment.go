@@ -7,6 +7,7 @@ package inferredspan
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -135,6 +136,29 @@ func (inferredSpan *InferredSpan) EnrichInferredSpanWithSNSEvent(eventPayload ev
 	}
 }
 
+func (inferredSpan *InferredSpan) EnrichInferredSpanWithSQSEvent(eventPayload events.SQSEvent) {
+	eventRecord := eventPayload.Records[0]
+	eventSourceArn := eventRecord.EventSourceARN
+	splitArn := strings.Split(eventSourceArn, ":")
+	queueName := splitArn[len(splitArn)-1]
+	startTime := calculateStartTime(convertStringTimestamp(eventRecord.Attributes[SentTimestamp]))
+
+	inferredSpan.IsAsync = true
+	inferredSpan.Span.Name = "aws.sqs"
+	inferredSpan.Span.Service = SQS
+	inferredSpan.Span.Start = startTime
+	inferredSpan.Span.Resource = queueName
+	inferredSpan.Span.Type = "web"
+	inferredSpan.Span.Meta = map[string]string{
+		OperationName:  "aws.sqs",
+		ResourceNames:  queueName,
+		QueueName:      queueName,
+		EventSourceARN: eventSourceArn,
+		ReceiptHandle:  eventRecord.ReceiptHandle,
+		SenderID:       eventRecord.Attributes["SenderID"],
+	}
+}
+
 func isAsyncEvent(snsRequest EventKeys) bool {
 	return snsRequest.Headers.InvocationType == "Event"
 }
@@ -154,4 +178,13 @@ func formatISOStartTime(isotime string) int64 {
 		return 0
 	}
 	return startTime.UnixNano()
+}
+
+func convertStringTimestamp(timestamp string) int64 {
+	t, err := strconv.ParseInt(timestamp, 0, 64)
+	if err != nil {
+		log.Debug("Could not parse timestamp from string")
+		return 0
+	}
+	return t
 }

@@ -22,6 +22,7 @@ import (
 type RequestHandler struct {
 	executionContext    *ExecutionStartInfo
 	inferredSpanContext *inferredspan.InferredSpan
+	snsInferredSpanContext *inferredspan.InferredSpan
 }
 
 func (r *RequestHandler) GetExecutionContext() *ExecutionStartInfo {
@@ -43,6 +44,15 @@ func (r *RequestHandler) CreateNewInferredSpan(currentInvocationStartTime time.T
 	r.inferredSpanContext = &inferredspan.InferredSpan{
 		CurrentInvocationStartTime: currentInvocationStartTime,
 		Span: &pb.Span{
+			SpanID: random.Random.Uint64(),
+		},
+	}
+}
+
+func (r *RequestHandler) CreateNewSNSInferredSpan(currentInvocationStartTime time.Time) {
+	r.snsInferredSpanContext = &inferredspan.InferredSpan{
+		CurrentInvocationStartTime: currentInvocationStartTime,
+		&pb.Span{
 			SpanID: random.Random.Uint64(),
 		},
 	}
@@ -98,12 +108,17 @@ func (lp *LifecycleProcessor) OnInvokeStart(startDetails *InvocationStartDetails
 		if lp.InferredSpansEnabled {
 			if err != nil {
 				log.Debug("[lifecycle] Attempting to create inferred span")
-			}
-			lp.requestHandler.inferredSpanContext.DispatchInferredSpan() // FOR IVAN // )
-		}
 
-		startExecutionSpan(lp.requestHandler.executionContext, inferredSpan, startDetails.StartTime, lambdaPayloadString, startDetails.InvokeEventHeaders, lp.InferredSpansEnabled)
+				if trigger.SNSSQSEvent {
+					lp.requestHandler.CreateNewSNSInferredSpan(startDetails.StartTime)
+					lp.requestHandler.snsInferredSpanContext.DispatchInferredSpan()
+				} else {
+					lp.requestHandler.inferredSpanContext.DispatchInferredSpan() // FOR IVAN // )
+			}
 	}
+	}
+
+	startExecutionSpan(lp.requestHandler.executionContext, lp.requestHandler.inferredSpanContext, startDetails.StartTime, lambdaPayloadString, startDetails.InvokeEventHeaders, lp.InferredSpansEnabled)
 
 	// Add trigger type stuff here
 }
@@ -121,7 +136,7 @@ func (lp *LifecycleProcessor) OnInvokeEnd(endDetails *InvocationEndDetails) {
 
 		if lp.InferredSpansEnabled {
 			log.Debug("[lifecycle] Attempting to complete the inferred span")
-			if inferredSpan.Span.Start != 0 {
+			if lp.requestHandler.inferredSpanContext.Span.Start != 0 {
 				inferredSpan.CompleteInferredSpan(lp.ProcessTrace, endDetails.EndTime, endDetails.IsError, lp.requestHandler.executionContext.TraceID, lp.requestHandler.executionContext.SamplingPriority)
 				log.Debugf("[lifecycle] The inferred span attributes are: %v", inferredSpan)
 			} else {

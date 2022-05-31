@@ -100,24 +100,29 @@ func FilterFunctionTags(input map[string]string) map[string]string {
 func (inferredSpan *InferredSpan) DispatchInferredSpan(eventType trigger.AWSEventType, eventPayload interface{}) error {
 	switch eventType {
 	case trigger.ApiGatewayEvent:
-		eventContext, ok := eventPayload.(events.APIGatewayProxyRequest)
+		event, ok := eventPayload.(events.APIGatewayProxyRequest)
 		if ok {
-			inferredSpan.EnrichInferredSpanWithAPIGatewayRESTEvent(eventContext)
+			inferredSpan.EnrichInferredSpanWithAPIGatewayRESTEvent(event)
 		}
 	case trigger.ApiGatewayV2Event:
-		eventContext, ok := eventPayload.(events.APIGatewayV2HTTPRequest)
+		event, ok := eventPayload.(events.APIGatewayV2HTTPRequest)
 		if ok {
-			inferredSpan.EnrichInferredSpanWithAPIGatewayHTTPEvent(eventContext)
+			inferredSpan.EnrichInferredSpanWithAPIGatewayHTTPEvent(event)
 		}
 	case trigger.ApiGatewayWebsocketEvent:
-		eventContext, ok := eventPayload.(events.APIGatewayWebsocketProxyRequest)
+		event, ok := eventPayload.(events.APIGatewayWebsocketProxyRequest)
 		if ok {
-			inferredSpan.EnrichInferredSpanWithAPIGatewayWebsocketEvent(eventContext)
+			inferredSpan.EnrichInferredSpanWithAPIGatewayWebsocketEvent(event)
 		}
 	case trigger.SNSEvent:
-		eventContext, ok := eventPayload.(events.SNSEvent)
+		event, ok := eventPayload.(events.SNSEvent)
 		if ok {
-			inferredSpan.EnrichInferredSpanWithSNSEvent(eventContext)
+			inferredSpan.EnrichInferredSpanWithSNSEvent(event)
+		}
+	case trigger.SQSEvent:
+		event, ok := eventPayload.(events.SQSEvent)
+		if ok {
+			inferredSpan.EnrichInferredSpanWithSQSEvent(event)
 		}
 	}
 
