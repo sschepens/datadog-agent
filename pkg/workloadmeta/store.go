@@ -263,6 +263,24 @@ func (s *store) ListContainers() ([]*Container, error) {
 	return containers, nil
 }
 
+// ListContainersWithFilter implements Store#ListContainersWithFilter
+func (s *store) ListContainersWithFilter(filter ContainerFilterFunc) ([]*Container, error) {
+	allContainers, err := s.ListContainers()
+	if err != nil {
+		return nil, err
+	}
+
+	var res []*Container
+
+	for _, container := range allContainers {
+		if filter(container) {
+			res = append(res, container)
+		}
+	}
+
+	return res, nil
+}
+
 // GetKubernetesPod implements Store#GetKubernetesPod
 func (s *store) GetKubernetesPod(id string) (*KubernetesPod, error) {
 	entity, err := s.getEntityByKind(KindKubernetesPod, id)

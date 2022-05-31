@@ -54,6 +54,24 @@ func (s *Store) ListContainers() ([]*workloadmeta.Container, error) {
 	return containers, nil
 }
 
+// ListContainersWithFilter returns metadata about the containers that pass the given filter.
+func (s *Store) ListContainersWithFilter(filter workloadmeta.ContainerFilterFunc) ([]*workloadmeta.Container, error) {
+	allContainers, err := s.ListContainers()
+	if err != nil {
+		return nil, err
+	}
+
+	var res []*workloadmeta.Container
+
+	for _, container := range allContainers {
+		if filter(container) {
+			res = append(res, container)
+		}
+	}
+
+	return res, nil
+}
+
 // GetKubernetesPod returns metadata about a Kubernetes pod.
 func (s *Store) GetKubernetesPod(id string) (*workloadmeta.KubernetesPod, error) {
 	entity, err := s.getEntityByKind(workloadmeta.KindKubernetesPod, id)

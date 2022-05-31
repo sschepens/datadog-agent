@@ -555,6 +555,48 @@ func TestSubscribe(t *testing.T) {
 	}
 }
 
+func TestListContainersWithFilter(t *testing.T) {
+	runningContainer := &Container{
+		EntityID: EntityID{
+			Kind: KindContainer,
+			ID:   "1",
+		},
+		State: ContainerState{
+			Running: true,
+		},
+	}
+
+	nonRunningContainer := &Container{
+		EntityID: EntityID{
+			Kind: KindContainer,
+			ID:   "2",
+		},
+		State: ContainerState{
+			Running: false,
+		},
+	}
+
+	testStore := newTestStore()
+
+	testStore.handleEvents([]CollectorEvent{
+		{
+			Type:   EventTypeSet,
+			Source: fooSource,
+			Entity: runningContainer,
+		},
+		{
+			Type:   EventTypeSet,
+			Source: fooSource,
+			Entity: nonRunningContainer,
+		},
+	})
+
+	runningContainers, err := testStore.ListContainersWithFilter(GetRunningContainers)
+
+	assert.NilError(t, err)
+	assert.DeepEqual(t, []*Container{runningContainer}, runningContainers)
+}
+
 func newTestStore() *store {
 	return &store{
 		store: make(map[Kind]map[string]*cachedEntity),
