@@ -8,7 +8,6 @@ import (
 
 // ConvertFlow convert goflow flow structure to internal flow structure
 func ConvertFlow(srcFlow *flowpb.FlowMessage, namespace string) *common.Flow {
-	// TODO: handle empty net.IP, it should not be <nil>
 	return &common.Flow{
 		Namespace:       namespace,
 		FlowType:        convertFlowType(srcFlow.Type),
