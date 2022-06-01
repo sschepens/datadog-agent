@@ -11,7 +11,6 @@ import (
 func buildPayload(aggFlow *common.Flow, hostname string) payload.FlowPayload {
 	// TODO: format ipProtocol
 	// TODO: format etherType
-	ipProtocol := fmt.Sprintf("%d", aggFlow.IPProtocol)
 	etherType := fmt.Sprintf("%d", aggFlow.EtherType)
 
 	return payload.FlowPayload{
@@ -27,7 +26,7 @@ func buildPayload(aggFlow *common.Flow, hostname string) payload.FlowPayload {
 		Bytes:      aggFlow.Bytes,
 		Packets:    aggFlow.Packets,
 		EtherType:  etherType,
-		IPProtocol: ipProtocol,
+		IPProtocol: enrichment.MapIPProtocol(aggFlow.IPProtocol),
 		Source: payload.Endpoint{
 			IP:   common.IPBytesToString(aggFlow.SrcAddr),
 			Port: aggFlow.SrcPort,

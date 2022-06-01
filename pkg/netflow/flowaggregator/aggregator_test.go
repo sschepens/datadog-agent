@@ -76,7 +76,7 @@ func TestAggregator(t *testing.T) {
   "bytes": 20,
   "packets": 4,
   "ether_type": "0",
-  "ip_protocol": "6",
+  "ip_protocol": "TCP",
   "exporter": {
     "ip": "127.0.0.1"
   },

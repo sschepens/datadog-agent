@@ -50,7 +50,7 @@ func Test_buildPayload(t *testing.T) {
 				Bytes:        10,
 				Packets:      2,
 				EtherType:    "1",
-				IPProtocol:   "6",
+				IPProtocol:   "TCP",
 				Exporter: payload.Exporter{
 					IP: "127.0.0.1",
 				},
