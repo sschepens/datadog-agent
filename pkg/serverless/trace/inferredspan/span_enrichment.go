@@ -28,7 +28,7 @@ func (inferredSpan *InferredSpan) EnrichInferredSpanWithAPIGatewayRESTEvent(even
 	inferredSpan.Span.Service = requestContext.DomainName
 	inferredSpan.Span.Resource = resource
 	inferredSpan.Span.Start = startTime
-	inferredSpan.Span.Type = "http"
+	inferredSpan.Span.Type = HTTP
 	inferredSpan.Span.Meta = map[string]string{
 		APIID:         requestContext.APIID,
 		APIName:       requestContext.APIID,
@@ -58,7 +58,7 @@ func (inferredSpan *InferredSpan) EnrichInferredSpanWithAPIGatewayHTTPEvent(even
 	inferredSpan.Span.Name = "aws.httpapi"
 	inferredSpan.Span.Service = requestContext.DomainName
 	inferredSpan.Span.Resource = resource
-	inferredSpan.Span.Type = "http"
+	inferredSpan.Span.Type = HTTP
 	inferredSpan.Span.Start = startTime
 	inferredSpan.Span.Meta = map[string]string{
 		Endpoint:      path,
@@ -88,7 +88,7 @@ func (inferredSpan *InferredSpan) EnrichInferredSpanWithAPIGatewayWebsocketEvent
 	inferredSpan.Span.Name = "aws.apigateway.websocket"
 	inferredSpan.Span.Service = requestContext.DomainName
 	inferredSpan.Span.Resource = endpoint
-	inferredSpan.Span.Type = "web"
+	inferredSpan.Span.Type = WEB
 	inferredSpan.Span.Start = startTime
 	inferredSpan.Span.Meta = map[string]string{
 		APIID:            requestContext.APIID,
@@ -119,7 +119,7 @@ func (inferredSpan *InferredSpan) EnrichInferredSpanWithSNSEvent(eventPayload ev
 	inferredSpan.Span.Service = SNS
 	inferredSpan.Span.Start = startTime
 	inferredSpan.Span.Resource = topicName
-	inferredSpan.Span.Type = "web"
+	inferredSpan.Span.Type = WEB
 	inferredSpan.Span.Meta = map[string]string{
 		OperationName: "aws.sns",
 		ResourceNames: topicName,
@@ -133,6 +133,33 @@ func (inferredSpan *InferredSpan) EnrichInferredSpanWithSNSEvent(eventPayload ev
 	if snsMessage.Subject != "" {
 		inferredSpan.Span.Meta[Subject] = snsMessage.Subject
 	}
+}
+
+func (inferredSpan *InferredSpan) EnrichInferredSpanWithKinesisEvent(eventPayload events.KinesisEvent) {
+	eventRecord := eventPayload.Records[0]
+	eventSourceArn := eventRecord.EventSourceArn
+	splitArn := strings.Split(eventSourceArn, ":")
+	eventID := eventRecord.EventID
+	streamName := splitArn[len(splitArn)-1]
+	shardID := strings.Split(eventID, ":")[0]
+
+	inferredSpan.IsAsync = true
+	inferredSpan.Span.Name = "aws.kinesis"
+	inferredSpan.Span.Service = KINESIS
+	inferredSpan.Span.Resource = streamName
+	inferredSpan.Span.Type = WEB
+	inferredSpan.Span.Meta = map[string]string{
+		OperationName:  "aws.kinesis",
+		ResourceNames:  streamName,
+		StreamName:     streamName,
+		ShardID:        shardID,
+		EventSourceARN: eventSourceArn,
+		EventID:        eventID,
+		EventName:      eventRecord.EventName,
+		EventVersion:   eventRecord.EventVersion,
+		PartitionKey:   eventRecord.Kinesis.PartitionKey,
+	}
+
 }
 
 func isAsyncEvent(snsRequest EventKeys) bool {

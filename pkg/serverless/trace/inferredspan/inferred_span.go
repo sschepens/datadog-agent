@@ -119,6 +119,11 @@ func (inferredSpan *InferredSpan) DispatchInferredSpan(eventType trigger.AWSEven
 		if ok {
 			inferredSpan.EnrichInferredSpanWithSNSEvent(eventContext)
 		}
+	case trigger.KinesisStreamEvent:
+		eventContext, ok := eventPayload.(events.KinesisEvent)
+		if ok {
+			inferredSpan.EnrichInferredSpanWithKinesisEvent(eventContext)
+		}
 	}
 
 	return nil
