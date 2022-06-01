@@ -67,11 +67,11 @@ network_devices:
 	assert.Equal(t, "10.129.2.1", actualFlow.Source.IP)
 	assert.Equal(t, uint32(49452), actualFlow.Source.Port)
 	assert.Equal(t, "00:00:00:00:00:00", actualFlow.Source.Mac)
-	assert.Equal(t, "0", actualFlow.Source.Mask) // TODO: Fixme
+	assert.Equal(t, "0.0.0.0/0", actualFlow.Source.Mask)
 	assert.Equal(t, "10.128.2.119", actualFlow.Destination.IP)
 	assert.Equal(t, uint32(8080), actualFlow.Destination.Port)
 	assert.Equal(t, "00:00:00:00:00:00", actualFlow.Destination.Mac)
-	assert.Equal(t, "0", actualFlow.Destination.Mask) // TODO: Fixme
+	assert.Equal(t, "0.0.0.0/0", actualFlow.Destination.Mask)
 	assert.Equal(t, uint32(1), actualFlow.Ingress.Interface.Index)
 	assert.Equal(t, uint32(7), actualFlow.Egress.Interface.Index)
 	assert.Equal(t, "default", actualFlow.Namespace)

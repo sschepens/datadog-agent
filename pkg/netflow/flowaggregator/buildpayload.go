@@ -31,7 +31,6 @@ func buildPayload(aggFlow *common.Flow, hostname string) payload.FlowPayload {
 		Source: payload.Endpoint{
 			IP:   common.IPBytesToString(aggFlow.SrcAddr),
 			Port: aggFlow.SrcPort,
-			// TODO: implement Mask
 			Mac:  enrichment.FormatMacAddress(aggFlow.SrcMac),
 			Mask: enrichment.FormatMask(aggFlow.SrcAddr, aggFlow.SrcMask),
 		},
@@ -39,7 +38,7 @@ func buildPayload(aggFlow *common.Flow, hostname string) payload.FlowPayload {
 			IP:   common.IPBytesToString(aggFlow.DstAddr),
 			Port: aggFlow.DstPort,
 			Mac:  enrichment.FormatMacAddress(aggFlow.DstMac),
-			Mask: fmt.Sprintf("%d", aggFlow.DstMask),
+			Mask: enrichment.FormatMask(aggFlow.DstAddr, aggFlow.DstMask),
 		},
 		Ingress: payload.ObservationPoint{
 			Interface: payload.Interface{

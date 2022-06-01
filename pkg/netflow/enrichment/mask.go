@@ -5,33 +5,30 @@ import (
 	"strconv"
 )
 
-const ipV4EtherType = 0x800
-const ipV6EtherType = 0x86dd
-
-func FormatMask(etherType uint32, ipAddr []byte, maskRawValue uint32) string {
-	// TODO: check for `.` or `:` for v4 vs v6
+func FormatMask(ipAddr []byte, maskRawValue uint32) string {
 	maskSuffix := "/" + strconv.Itoa(int(maskRawValue))
-	var maskBits int
-	switch etherType {
-	case ipV4EtherType:
-		maskBits = 32
-	case ipV6EtherType:
-		maskBits = 128
-	default:
-		if maskRawValue != 0 {
-			return maskSuffix
-		}
-		return ""
-	}
 
 	ip := net.IP(ipAddr)
 	if ip == nil {
 		return maskSuffix
 	}
 
-	mask := net.CIDRMask(int(maskRawValue), maskBits)
+	var maskBitsLen int
+	// Using ip.To4() to test for ipv4
+	// More info: https://stackoverflow.com/questions/40189084/what-is-ipv6-for-localhost-and-0-0-0-0
+	if ip.To4() != nil {
+		maskBitsLen = 32
+	} else {
+		maskBitsLen = 128
+	}
+
+	mask := net.CIDRMask(int(maskRawValue), maskBitsLen)
 	if mask == nil {
 		return maskSuffix
 	}
-	return ip.Mask(mask).String() + maskSuffix
+	maskedIP := ip.Mask(mask)
+	if maskedIP == nil {
+		return maskSuffix
+	}
+	return maskedIP.String() + maskSuffix
 }

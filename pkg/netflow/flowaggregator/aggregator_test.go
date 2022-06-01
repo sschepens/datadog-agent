@@ -84,13 +84,13 @@ func TestAggregator(t *testing.T) {
     "ip": "10.10.10.10",
     "port": 2000,
     "mac": "00:00:00:00:00:00",
-    "mask": "0"
+    "mask": "0.0.0.0/0"
   },
   "destination": {
     "ip": "10.10.10.20",
     "port": 80,
     "mac": "00:00:00:00:00:00",
-    "mask": "0"
+    "mask": "0.0.0.0/0"
   },
   "ingress": {
     "interface": {
