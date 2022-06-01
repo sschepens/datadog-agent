@@ -16,8 +16,8 @@ import (
 
 	"github.com/coreos/go-systemd/sdjournal"
 
-	"github.com/DataDog/datadog-agent/pkg/logs/config"
 	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/sources"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
@@ -29,7 +29,7 @@ const (
 
 // Tailer collects logs from a journal.
 type Tailer struct {
-	source       *config.LogSource
+	source       *sources.LogSource
 	outputChan   chan *message.Message
 	journal      *sdjournal.Journal
 	excludeUnits struct {
@@ -41,7 +41,7 @@ type Tailer struct {
 }
 
 // NewTailer returns a new tailer.
-func NewTailer(source *config.LogSource, outputChan chan *message.Message) *Tailer {
+func NewTailer(source *sources.LogSource, outputChan chan *message.Message) *Tailer {
 	return &Tailer{
 		source:     source,
 		outputChan: outputChan,
