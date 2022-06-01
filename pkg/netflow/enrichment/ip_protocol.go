@@ -1,7 +1,5 @@
 package enrichment
 
-import "strconv"
-
 var protocolMap = map[uint32]string{
 	0:   "HOPOPT",
 	1:   "ICMP",
@@ -150,7 +148,7 @@ var protocolMap = map[uint32]string{
 func MapIPProtocol(protocolNumber uint32) string {
 	protoStr, ok := protocolMap[protocolNumber]
 	if !ok {
-		return strconv.Itoa(int(protocolNumber))
+		return ""
 	}
 	return protoStr
 }
