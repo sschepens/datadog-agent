@@ -31,7 +31,7 @@ func Test_buildPayload(t *testing.T) {
 				DstMac:          uint64(20),
 				SrcMask:         uint32(10),
 				DstMask:         uint32(20),
-				EtherType:       uint32(1),
+				EtherType:       uint32(0x0800),
 				IPProtocol:      uint32(6),
 				SrcPort:         uint32(2000),
 				DstPort:         uint32(80),
@@ -49,7 +49,7 @@ func Test_buildPayload(t *testing.T) {
 				End:          1234569,
 				Bytes:        10,
 				Packets:      2,
-				EtherType:    "1",
+				EtherType:    "IPv4",
 				IPProtocol:   "TCP",
 				Exporter: payload.Exporter{
 					IP: "127.0.0.1",

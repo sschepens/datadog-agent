@@ -1,7 +1,6 @@
 package flowaggregator
 
 import (
-	"fmt"
 	"github.com/DataDog/datadog-agent/pkg/netflow/enrichment"
 
 	"github.com/DataDog/datadog-agent/pkg/netflow/common"
@@ -9,10 +8,6 @@ import (
 )
 
 func buildPayload(aggFlow *common.Flow, hostname string) payload.FlowPayload {
-	// TODO: format ipProtocol
-	// TODO: format etherType
-	etherType := fmt.Sprintf("%d", aggFlow.EtherType)
-
 	return payload.FlowPayload{
 		// TODO: Implement Tos
 		FlowType:     string(aggFlow.FlowType),
@@ -25,7 +20,7 @@ func buildPayload(aggFlow *common.Flow, hostname string) payload.FlowPayload {
 		End:        aggFlow.EndTimestamp,
 		Bytes:      aggFlow.Bytes,
 		Packets:    aggFlow.Packets,
-		EtherType:  etherType,
+		EtherType:  enrichment.MapEtherType(aggFlow.EtherType),
 		IPProtocol: enrichment.MapIPProtocol(aggFlow.IPProtocol),
 		Source: payload.Endpoint{
 			IP:   common.IPBytesToString(aggFlow.SrcAddr),

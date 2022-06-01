@@ -50,6 +50,7 @@ func TestAggregator(t *testing.T) {
 		SrcPort:        uint32(2000),
 		DstPort:        uint32(80),
 		TCPFlags:       19,
+		EtherType:      uint32(0x0800),
 	}
 
 	aggregator := NewFlowAggregator(sender, &conf, "my-hostname")
@@ -75,7 +76,7 @@ func TestAggregator(t *testing.T) {
   "end": 1234569,
   "bytes": 20,
   "packets": 4,
-  "ether_type": "0",
+  "ether_type": "IPv4",
   "ip_protocol": "TCP",
   "exporter": {
     "ip": "127.0.0.1"

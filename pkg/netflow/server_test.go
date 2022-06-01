@@ -61,7 +61,7 @@ network_devices:
 	assert.Equal(t, uint64(1540209168), actualFlow.Start)
 	assert.Equal(t, uint64(1540209169), actualFlow.End)
 	assert.Equal(t, uint64(194), actualFlow.Bytes)
-	assert.Equal(t, "2048", actualFlow.EtherType)
+	assert.Equal(t, "IPv4", actualFlow.EtherType)
 	assert.Equal(t, "TCP", actualFlow.IPProtocol)
 	assert.Equal(t, "127.0.0.1", actualFlow.Exporter.IP)
 	assert.Equal(t, "10.129.2.1", actualFlow.Source.IP)
