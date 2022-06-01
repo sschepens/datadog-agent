@@ -14,13 +14,14 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/logs/internal/launchers"
 	tailer "github.com/DataDog/datadog-agent/pkg/logs/internal/tailers/journald"
 	"github.com/DataDog/datadog-agent/pkg/logs/pipeline"
+	"github.com/DataDog/datadog-agent/pkg/logs/sources"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/DataDog/datadog-agent/pkg/util/startstop"
 )
 
 // Launcher is in charge of starting and stopping new journald tailers
 type Launcher struct {
-	sources          chan *config.LogSource
+	sources          chan *sources.LogSource
 	pipelineProvider pipeline.Provider
 	registry         auditor.Registry
 	tailers          map[string]*tailer.Tailer
@@ -78,7 +79,7 @@ func (l *Launcher) Stop() {
 
 // setupTailer configures and starts a new tailer,
 // returns the tailer or an error.
-func (l *Launcher) setupTailer(source *config.LogSource) (*tailer.Tailer, error) {
+func (l *Launcher) setupTailer(source *sources.LogSource) (*tailer.Tailer, error) {
 	tailer := tailer.NewTailer(source, l.pipelineProvider.NextPipelineChan())
 	cursor := l.registry.GetOffset(tailer.Identifier())
 	err := tailer.Start(cursor)
