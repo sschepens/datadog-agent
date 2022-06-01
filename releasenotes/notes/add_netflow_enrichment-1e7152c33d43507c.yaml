@@ -8,4 +8,4 @@
 ---
 enhancements:
   - |
-    Add NetFlow static Enrichments (tcp flags, ip protocol, ether type, ...)
+    Add NetFlow static enrichments (TCP flags, IP Protocol, EtherType, and more).
