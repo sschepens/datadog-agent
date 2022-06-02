@@ -93,10 +93,10 @@ func TestEnrichInferredSpanWithAPIGatewayNonProxyAsyncRESTEvent(t *testing.T) {
 }
 
 func TestEnrichInferredSpanWithAPIGatewayHTTPEvent(t *testing.T) {
-	var apiGatewayHttpEvent events.APIGatewayV2HTTPRequest
-	_ = json.Unmarshal(getEventFromFile("http-api.json"), &apiGatewayHttpEvent)
+	var apiGatewayHTTPEvent events.APIGatewayV2HTTPRequest
+	_ = json.Unmarshal(getEventFromFile("http-api.json"), &apiGatewayHTTPEvent)
 	inferredSpan := mockInferredSpan()
-	inferredSpan.EnrichInferredSpanWithAPIGatewayHTTPEvent(apiGatewayHttpEvent)
+	inferredSpan.EnrichInferredSpanWithAPIGatewayHTTPEvent(apiGatewayHTTPEvent)
 
 	span := inferredSpan.Span
 	assert.Equal(t, uint64(7353030974370088224), span.TraceID)

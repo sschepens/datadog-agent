@@ -107,6 +107,9 @@ func (inferredSpan *InferredSpan) EnrichInferredSpanWithAPIGatewayWebsocketEvent
 	inferredSpan.IsAsync = eventPayload.Headers[InvocationType] == "Event"
 }
 
+// EnrichInferredSpanWithSNSEvent uses the parsed event
+// payload to enrich the current inferred span. It applies a
+// specific set of data to the span expected from a SNS event.
 func (inferredSpan *InferredSpan) EnrichInferredSpanWithSNSEvent(eventPayload events.SNSEvent) {
 	eventRecord := eventPayload.Records[0]
 	snsMessage := eventRecord.SNS
@@ -135,6 +138,9 @@ func (inferredSpan *InferredSpan) EnrichInferredSpanWithSNSEvent(eventPayload ev
 	}
 }
 
+// EnrichInferredSpanWithKinesisEvent uses the parsed event
+// payload to enrich the current inferred span. It applies a
+// specific set of data to the span expected from a Kinesis event.
 func (inferredSpan *InferredSpan) EnrichInferredSpanWithKinesisEvent(eventPayload events.KinesisEvent) {
 	eventRecord := eventPayload.Records[0]
 	eventSourceArn := eventRecord.EventSourceArn
