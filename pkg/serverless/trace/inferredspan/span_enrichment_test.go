@@ -224,19 +224,40 @@ func TestEnrichInferredSpanWithSNSEvent(t *testing.T) {
 
 func TestEnrichInferredSpanWithKinesisEvent(t *testing.T) {
 	var kinesisRequest events.KinesisEvent
-	_ = json.Unmarshal(getEventFromFile("kinesis.json"))
+	_ = json.Unmarshal(getEventFromFile("kinesis.json"), &kinesisRequest)
+	inferredSpan := mockInferredSpan()
+	inferredSpan.EnrichInferredSpanWithKinesisEvent(kinesisRequest)
+
+	span := inferredSpan.Span
+
+	assert.Equal(t, uint64(7353030974370088224), span.TraceID)
+	assert.Equal(t, uint64(8048964810003407541), span.SpanID)
+	assert.Equal(t, "kinesis", span.Service)
+	assert.Equal(t, "aws.kinesis", span.Name)
+	assert.Equal(t, "stream/kinesisStream", span.Resource)
+	assert.Equal(t, WEB, span.Type)
+	assert.Equal(t, "aws.kinesis", span.Meta[OperationName])
+	assert.Equal(t, "stream/kinesisStream", span.Meta[ResourceNames])
+	assert.Equal(t, "stream/kinesisStream", span.Meta[StreamName])
+	assert.Equal(t, "shardId-000000000002", span.Meta[ShardID])
+	assert.Equal(t, "arn:aws:kinesis:sa-east-1:601427279990:stream/kinesisStream", span.Meta[EventSourceARN])
+	assert.Equal(t, "shardId-000000000002:49624230154685806402418173680709770494154422022871973922", span.Meta[EventID])
+	assert.Equal(t, "aws:kinesis:record", span.Meta[EventName])
+	assert.Equal(t, "1.0", span.Meta[EventVersion])
+	assert.Equal(t, "partitionkey", span.Meta[PartitionKey])
+	assert.True(t, inferredSpan.IsAsync)
 }
 
-```def test_extract_context_from_kinesis_batch_event(self):
-        event_sample_source = "kinesis-batch"
-        test_file = event_samples + event_sample_source + ".json"
-        with open(test_file, "r") as event:
-            event = json.load(event)
-        ctx = get_mock_context()
-        context, source = extract_dd_trace_context(event, ctx)
-        self.assertEqual(context["trace-id"], "4948377316357291421")
-        self.assertEqual(context["parent-id"], "2876253380018681026")
-        self.assertEqual(context["sampling-priority"], "1")```
+// ```def test_extract_context_from_kinesis_batch_event(self):
+//         event_sample_source = "kinesis-batch"
+//         test_file = event_samples + event_sample_source + ".json"
+//         with open(test_file, "r") as event:
+//             event = json.load(event)
+//         ctx = get_mock_context()
+//         context, source = extract_dd_trace_context(event, ctx)
+//         self.assertEqual(context["trace-id"], "4948377316357291421")
+//         self.assertEqual(context["parent-id"], "2876253380018681026")
+//         self.assertEqual(context["sampling-priority"], "1")```
 
 func TestFormatISOStartTime(t *testing.T) {
 	isotime := "2022-01-31T14:13:41.637Z"
