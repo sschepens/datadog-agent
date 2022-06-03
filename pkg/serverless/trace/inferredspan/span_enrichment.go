@@ -7,6 +7,7 @@ package inferredspan
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -133,6 +134,29 @@ func (inferredSpan *InferredSpan) EnrichInferredSpanWithSNSEvent(eventPayload ev
 	if snsMessage.Subject != "" {
 		inferredSpan.Span.Meta[Subject] = snsMessage.Subject
 	}
+}
+
+func (inferredSpan *InferredSpan) EnrichInferredSpanWithS3Event(eventPayload events.S3Event) {
+	eventRecord := eventPayload.Records[0]
+	bucketName := eventRecord.S3.Bucket.Name
+
+	inferredSpan.IsAsync = true
+	inferredSpan.Span.Name = "aws.s3"
+	inferredSpan.Span.Service = S3
+	inferredSpan.Span.Start = eventRecord.EventTime.UnixNano()
+	inferredSpan.Span.Resource = bucketName
+	inferredSpan.Span.Type = "web"
+	inferredSpan.Span.Meta = map[string]string{
+		OperationName: "aws.s3",
+		ResourceNames: bucketName,
+		EventName:     eventRecord.EventName,
+		BucketName:    bucketName,
+		BucketARN:     eventRecord.S3.Bucket.Arn,
+		ObjectKey:     eventRecord.S3.Object.Key,
+		ObjectSize:    strconv.FormatInt(eventRecord.S3.Object.Size, 10),
+		ObjectETag:    eventRecord.S3.Object.ETag,
+	}
+
 }
 
 func isAsyncEvent(snsRequest EventKeys) bool {
