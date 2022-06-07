@@ -37,25 +37,25 @@ type RareSampler struct {
 	shrinks *atomic.Int64
 	mu      sync.RWMutex
 
-	tickStats        *time.Ticker
-	limiter          *rate.Limiter
-	ttl              time.Duration
-	cardinalityLimit int
-	seen             map[Signature]*seenSpans
+	tickStats   *time.Ticker
+	limiter     *rate.Limiter
+	ttl         time.Duration
+	cardinality int
+	seen        map[Signature]*seenSpans
 }
 
 // NewRareSampler returns a NewRareSampler that ensures that we sample combinations
 // of env, service, name, resource, http-status, error type for each top level or measured spans
 func NewRareSampler(conf *config.AgentConfig) *RareSampler {
 	e := &RareSampler{
-		hits:             atomic.NewInt64(0),
-		misses:           atomic.NewInt64(0),
-		shrinks:          atomic.NewInt64(0),
-		limiter:          rate.NewLimiter(rate.Limit(conf.RareSamplerTPS), rareSamplerBurst),
-		ttl:              conf.RareSamplerCooldownPeriod,
-		cardinalityLimit: conf.RareSamplerCardinality,
-		seen:             make(map[Signature]*seenSpans),
-		tickStats:        time.NewTicker(10 * time.Second),
+		hits:        atomic.NewInt64(0),
+		misses:      atomic.NewInt64(0),
+		shrinks:     atomic.NewInt64(0),
+		limiter:     rate.NewLimiter(rate.Limit(conf.RareSamplerTPS), rareSamplerBurst),
+		ttl:         conf.RareSamplerCooldownPeriod,
+		cardinality: conf.RareSamplerCardinality,
+		seen:        make(map[Signature]*seenSpans),
+		tickStats:   time.NewTicker(10 * time.Second),
 	}
 	go func() {
 		for range e.tickStats.C {
@@ -145,7 +145,7 @@ func (e *RareSampler) loadSeenSpans(shardSig Signature) *seenSpans {
 	s = &seenSpans{
 		expires:             make(map[spanHash]time.Time),
 		totalSamplerShrinks: e.shrinks,
-		cardinalityLimit:    e.cardinalityLimit,
+		cardinality:         e.cardinality,
 	}
 	e.mu.Lock()
 	e.seen[shardSig] = s
@@ -168,8 +168,8 @@ type seenSpans struct {
 	shrunk bool
 	// totalSamplerShrinks is the reference to the total number of shrinks reported by RareSampler.
 	totalSamplerShrinks *atomic.Int64
-	// cardinalityLimit limits the number of spans considered per combination of (env, service).
-	cardinalityLimit int
+	// cardinality limits the number of spans considered per combination of (env, service).
+	cardinality int
 }
 
 func (ss *seenSpans) add(expire time.Time, s *pb.Span) {
@@ -184,7 +184,7 @@ func (ss *seenSpans) add(expire time.Time, s *pb.Span) {
 
 	// if cardinality limit reached, shrink
 	size := len(ss.expires)
-	if size > ss.cardinalityLimit {
+	if size > ss.cardinality {
 		ss.shrink()
 	}
 	ss.mu.Unlock()
@@ -195,9 +195,9 @@ func (ss *seenSpans) add(expire time.Time, s *pb.Span) {
 // all sampling tokens. The cardinality limit matches a backend limit.
 // This function is not thread safe and should be called between locks
 func (ss *seenSpans) shrink() {
-	newExpires := make(map[spanHash]time.Time, ss.cardinalityLimit)
+	newExpires := make(map[spanHash]time.Time, ss.cardinality)
 	for h, expire := range ss.expires {
-		newExpires[h%spanHash(ss.cardinalityLimit)] = expire
+		newExpires[h%spanHash(ss.cardinality)] = expire
 	}
 	ss.expires = newExpires
 	ss.shrunk = true
@@ -214,7 +214,7 @@ func (ss *seenSpans) getExpire(h spanHash) (time.Time, bool) {
 func (ss *seenSpans) sign(s *pb.Span) spanHash {
 	h := computeSpanHash(s, "", true)
 	if ss.shrunk {
-		h = h % spanHash(ss.cardinalityLimit)
+		h = h % spanHash(ss.cardinality)
 	}
 	return h
 }
